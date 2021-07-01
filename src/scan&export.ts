@@ -305,8 +305,11 @@ function ExportItem(t: ShimoItem, format: string): Promise<Blob> {
                         now.setSeconds(now.getSeconds() + num)
                         WriteLog("石墨限制，等待到这之后再继续：" + now.toLocaleTimeString())
                         await Sleep(num * 1000)
-                        reject()
+                    }else{
+                        WriteLog("不确定的出错，2秒后重试：" + str) 
+                        await Sleep(2000)
                     }
+                    reject()
                 }
             },
             onerror: function (rep) {
