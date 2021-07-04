@@ -127,9 +127,7 @@ async function ExportItems(): Promise<void> {
         WriteLog(typeName + "：" + v)
     })
     WriteLog("下面开始下载要导出的文件")
-
     let zip = new JSZip
-
     for (let index = 0; index < len; index++) {
         let v = GotItems[index]
         let pathname = BuildFolderPathName(v, true)
@@ -138,7 +136,11 @@ async function ExportItems(): Promise<void> {
             console.log("无法导出，跳过：", pathname)
             continue
         }
-        WriteLog("进度：" + (index / len * 100).toFixed(1) + "% " + pathname + "." + format)
+        let format2 = format
+        if (format2.length > 0) {
+            format2 = "." + format2
+        }
+        WriteLog("进度：" + (index / len * 100).toFixed(1) + "% " + pathname + format2)
         let ok = false
         for (let retry = 0; retry < 4; retry++) {
             if (retry > 0) {
@@ -162,7 +164,7 @@ async function ExportItems(): Promise<void> {
                         zp = zp2
                     })
                 }
-                zp.file(v.name + "." + format, blob)
+                zp.file(v.name + format2, blob)
                 ok = true
                 if (retry > 0) {
                     WriteLog("重试成功：" + pathname)
@@ -213,21 +215,31 @@ async function ExportItems(): Promise<void> {
     }
     let dt = new Date
     let pass = (dt.getTime() - StartTime) / 1000 / 60
-    WriteLog("总用时：" + pass.toFixed(1) + " 分钟。")
-    WriteLog("正在生成 zip 文件")
+    WriteLog("内部下载总用时：" + pass.toFixed(1) + " 分钟。")
     zip.file("导出日志.txt", logHistory)
-    let b64 = await zip.generateAsync({ type: "base64" })
+    let lastPercent = -999
+    WriteLog("开始生成 zip 文件，如果文件多也要花一点时间")
+    let zipblob = await zip.generateAsync({ type: "blob" },
+        function (metadata: Metadata) {
+            let v = metadata.percent
+            if (v - lastPercent > 5) {
+                WriteLog("目前进度：  " + v.toFixed() + "%")
+                lastPercent = v
+            }
+        })
     let DownloadZIP = function () {
-        DownloadData(dt.getTime().toFixed() + ".zip", b64)
+        var a = document.createElement("a")
+        a.href = window.URL.createObjectURL(zipblob)
+        var d = new Date
+        a.download = "石墨导出" + d.getTime().toFixed() + ".zip"
+        a.click()
     }
     DownloadZIP()
     let but = document.createElement("button")
     but.innerText = "点我下载"
     but.style.padding = "5px"
     but.style.fontSize = "2em"
-    but.onclick = function () {
-        DownloadZIP()
-    }
+    but.onclick = DownloadZIP
     logPanel.appendChild(but)
     GM_notification({ text: "您的石墨文档导出已经完成！可以下载了！", title: "下载完成！", timeout: 0 })
     WriteLog("可以下载了！")
@@ -237,6 +249,10 @@ async function ExportItems(): Promise<void> {
 function ExportItem(t: ShimoItem, format: string): Promise<Blob> {
     let url = "https://xxport.shimo.im/files/" + t.id + "/export?type=" + format + "&file=" + t.id + "&returnJson=1&name=" + t.name
     console.log(url)
+    let directDownload = t.type == ShimoItemType.files
+    if (directDownload) {
+        url = "https://shimo.im/lizard-api/files/" + t.id + "/download"
+    }
     let refr = BuildFolderPathName(t, false)
     if (FolderIDs.has(refr)) {
         refr = FolderIDs.get(refr) as string
@@ -273,54 +289,58 @@ function ExportItem(t: ShimoItem, format: string): Promise<Blob> {
                 }
             })
         }
-        GM_xmlhttpRequest({
-            url: url,
-            headers: {
-                Accept: "*/*",
-                Referer: refr
-            },
-            method: "GET",
-            timeout: 5000,
-            onload: async function (rep) {
-                if (rep.status == 200) {
-                    try {
-                        let info: ShimoExportResult = JSON.parse(rep.responseText)
-                        let u = info.redirectUrl
-                        if (u.length > 15) {
-                            downloads(u)
+        if (directDownload) {
+            downloads(url)
+        } else {
+            GM_xmlhttpRequest({
+                url: url,
+                headers: {
+                    Accept: "*/*",
+                    Referer: refr
+                },
+                method: "GET",
+                timeout: 19000,
+                onload: async function (rep) {
+                    if (rep.status == 200) {
+                        try {
+                            let info: ShimoExportResult = JSON.parse(rep.responseText)
+                            let u = info.redirectUrl
+                            if (u.length > 15) {
+                                downloads(u)
+                            }
+                        } catch (error) {
+                            WriteLog("API返回JSON解析失败：" + error)
+                            reject()
                         }
-                    } catch (error) {
-                        WriteLog("API返回JSON解析失败：" + error)
+                    } else {
+                        let str = rep.responseText
+                        WriteLog("返回异常：" + rep.status.toFixed() + " " + str)
+                        //{"requestId":"e5a1795135de65730960400ca6d9f160","error":"Rate limit exceeded, retry in 22 seconds","errorCode":0}
+                        const reg = new RegExp("retry in ([0-9]+) seconds", "gim")
+                        let rs = reg.exec(str)
+                        if (rs != null) {
+                            let num = parseFloat(rs[1]) + 1
+                            let now = new Date
+                            now.setSeconds(now.getSeconds() + num)
+                            WriteLog("石墨限制，等待到这之后再继续：" + now.toLocaleTimeString())
+                            await Sleep(num * 1000)
+                        } else {
+                            WriteLog("不确定的出错，2秒后重试：" + str)
+                            await Sleep(2000)
+                        }
                         reject()
                     }
-                } else {
-                    let str = rep.responseText
-                    WriteLog("返回异常：" + rep.status.toFixed() + " " + str)
-                    //{"requestId":"e5a1795135de65730960400ca6d9f160","error":"Rate limit exceeded, retry in 22 seconds","errorCode":0}
-                    const reg = new RegExp("retry in ([0-9]+) seconds", "gim")
-                    let rs = reg.exec(str)
-                    if (rs != null) {
-                        let num = parseFloat(rs[1]) + 1
-                        let now = new Date
-                        now.setSeconds(now.getSeconds() + num)
-                        WriteLog("石墨限制，等待到这之后再继续：" + now.toLocaleTimeString())
-                        await Sleep(num * 1000)
-                    }else{
-                        WriteLog("不确定的出错，2秒后重试：" + str) 
-                        await Sleep(2000)
-                    }
+                },
+                onerror: function (rep) {
+                    WriteLog("返回出错：" + rep.error)
+                    reject()
+                },
+                ontimeout: function () {
+                    WriteLog("返回超时！")
                     reject()
                 }
-            },
-            onerror: function (rep) {
-                WriteLog("返回出错：" + rep.error)
-                reject()
-            },
-            ontimeout: function () {
-                WriteLog("返回超时！")
-                reject()
-            }
-        })
+            })
+        }
     }
     )
     return p

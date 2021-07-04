@@ -3,7 +3,7 @@
 
 // 把石墨文档的链接转换为信息，这只处理链接字符串，返回的name默认是空的
 function URL2ShimoItem(url: string): ShimoItem | null {
-    const reg = new RegExp("(folder|docs|sheets|mindmaps|forms|boards|docx|presentation)/([a-z|A-Z|0-9]+)", "gim")
+    const reg = new RegExp("(folder|docs|sheets|mindmaps|forms|boards|docx|presentation|files)/([a-z|A-Z|0-9]+)", "gim")
     let rs = reg.exec(url)
     if (rs == null) {
         WriteLog("无法解析链接：" + url)
@@ -70,19 +70,6 @@ function BuildFolderPathName(t: ShimoItem, addOwn: boolean): string {
         pathname += t.name
     }
     return pathname
-}
-
-// 下载一个base64的文件
-function DownloadData(filename: string, content: string) {
-    var c = document.createElement('a')
-    let s = 'data:application/zip;base64,'
-    s += content
-    c.href = s
-    c.download = filename
-    c.style.display = 'none'
-    document.body.appendChild(c)
-    c.click()
-    c.remove()
 }
 
 // 异步里的暂停工作

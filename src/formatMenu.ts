@@ -13,6 +13,7 @@ const fmOptions = new Map<string, HTMLSelectElement>();
     defaultFormats.set("mindmaps", "xmind")
     defaultFormats.set("docx", "docx")
     defaultFormats.set("presentation", "pptx")
+    defaultFormats.set("files", "")
     defaultFormats.forEach(function (v, k) {
         ExportFormats.set(k, GM_getValue("fm_" + k, v))
     })
@@ -73,7 +74,7 @@ function OpenFormatMenu() {
 function GetFormatByType(v: ShimoItemType): string | null {
     let kind = ShimoItemType[v] as keyof typeof ShimoItemType
     let format = ExportFormats.get(kind)
-    if (format == null || format.length < 1) {
+    if (format == null) {
         return null
     }
     return format

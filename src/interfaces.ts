@@ -8,7 +8,8 @@ enum ShimoItemType {
     forms,
     boards,
     docx,
-    presentation
+    presentation,
+    files
 }
 
 const ShimoItemTypeNames = new Map<ShimoItemType, string>()
@@ -20,6 +21,7 @@ ShimoItemTypeNames.set(ShimoItemType.forms, "表单（不可导出）")
 ShimoItemTypeNames.set(ShimoItemType.boards, "白板（不可导出）")
 ShimoItemTypeNames.set(ShimoItemType.docx, "传统文档")
 ShimoItemTypeNames.set(ShimoItemType.presentation, "幻灯片")
+ShimoItemTypeNames.set(ShimoItemType.files, "其他文件")
 
 // 简单存储石墨文档里的文件信息
 interface ShimoItem {

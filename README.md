@@ -12,6 +12,10 @@
 
 你手动点导出也一样，你很快就导出了5个，然后再点导出什么都不发生了，得等几十秒之后才行。  
 
+新特性：石墨现在支持直接上传任何格式的文件，并且支持预览很多种文件。   
+上传上去的 office 文件不会直接变成在线文档，而是以在线静态文件的身份存在（类似网盘）。   
+下载此类文件不会占用时间限制。    
+
 ```json
 HTTP: 429
 {
@@ -33,10 +37,10 @@ HTTP: 429
 - 速度：一键导出65个文件用时 14.1 分钟。    
 
 # 截图
-![截图afda](https://s3.ax1x.com/2021/03/19/6R7YkV.png)   
-![截图gfdfhd](https://s3.ax1x.com/2021/03/19/6RhDmV.png)  
-![截图0dfhgdh2](https://s3.ax1x.com/2021/03/19/6RhPQ1.png)    
-![截图gfhhte3](https://s3.ax1x.com/2021/03/19/6RhtYQ.png)   
+![截图afda](https://z3.ax1x.com/2021/03/19/6R7YkV.png)   
+![截图gfdfhd](https://z3.ax1x.com/2021/03/19/6RhDmV.png)  
+![截图0dfhgdh2](https://z3.ax1x.com/2021/03/19/6RhPQ1.png)    
+![截图gfhhte3](https://z3.ax1x.com/2021/03/19/6RhtYQ.png)   
 
 # 安装、使用
 安装脚本： [greasy fork](https://greasyfork.org/zh-CN/scripts/423544-%E7%9F%B3%E5%A2%A8%E6%96%87%E6%A1%A3%E6%89%B9%E9%87%8F%E5%AF%BC%E5%87%BA)       
